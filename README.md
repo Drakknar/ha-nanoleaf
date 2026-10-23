@@ -1,3 +1,9 @@
+> [!IMPORTANT]
+> **This custom integration is no longer maintained.**
+> Starting with Home Assistant **2026.11**, the built-in [Nanoleaf integration](https://www.home-assistant.io/integrations/nanoleaf/) supports everything this custom integration offers: Nanoleaf Essentials, the Screen Mirroring modes of the Nanoleaf 4D (as light effects), and fixes for newer firmware versions.
+>
+> Until then you can keep using this custom integration. After updating to 2026.11, remove it (in HACS, or by deleting `config/custom_components/nanoleaf`), restart Home Assistant and use the built-in integration. A custom integration with the same domain overrides the built-in one, so it has to be removed.
+
 # Nanoleaf
 
 [![GitHub Release](https://img.shields.io/github/v/release/loebi-ch/nanoleaf?style=flat-square)](https://github.com/loebi-ch/nanoleaf/releases)
