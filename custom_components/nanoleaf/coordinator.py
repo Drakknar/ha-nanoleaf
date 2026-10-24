@@ -77,8 +77,9 @@ class NanoleafCoordinator(DataUpdateCoordinator[None]):
             await nanoleaf.get_emersion()
             await self.screen_mirror.async_update()
         except NanoleafError as err:
+            # Values read before the error are kept: still report them below,
+            # or the next refresh would see no change and never write them.
             _LOGGER.debug("Could not refresh the Screen Mirroring settings: %s", err)
-            return
         if before != (
             nanoleaf.emersion,
             self.screen_mirror.music_sync,

@@ -3,7 +3,7 @@
 from datetime import timedelta
 from unittest.mock import AsyncMock, call
 
-from aionanoleaf2 import EndpointNotFoundError, NanoleafConnectionError
+from aionanoleaf2 import EndpointNotFoundError, NanoleafConnectionError, Unavailable
 from freezegun.api import FrozenDateTimeFactory
 import pytest
 from pytest_homeassistant_custom_component.common import (
@@ -189,6 +189,50 @@ async def test_firmware_without_music_sync(
     assert hass.states.get(MODE).state == "4D"
 
 
+async def test_music_sync_refused_by_the_device(
+    hass: HomeAssistant, mock_4d: AsyncMock, mock_config_entry: MockConfigEntry
+) -> None:
+    """Test an HTTP error on a Music Sync read leaves the rest of the device up."""
+    mock_4d._request.side_effect = Unavailable(
+        "Device returned HTTP 400 for 'effects'"
+    )
+    await setup_integration(hass, mock_config_entry)
+
+    assert hass.states.get("light.nanoleaf").state != STATE_UNAVAILABLE
+    assert hass.states.get(MODE).state == "4D"
+    assert hass.states.get(MUSIC).state == STATE_UNAVAILABLE
+    assert hass.states.get(STYLE).state == STATE_UNAVAILABLE
+
+
+async def test_music_sync_read_connection_error(
+    hass: HomeAssistant, mock_4d: AsyncMock, mock_config_entry: MockConfigEntry
+) -> None:
+    """Test a lost connection on a Music Sync read still fails the update."""
+    await setup_integration(hass, mock_config_entry)
+    mock_4d._request.side_effect = NanoleafConnectionError("down")
+
+    await mock_config_entry.runtime_data.async_refresh()
+    await hass.async_block_till_done()
+
+    assert hass.states.get("light.nanoleaf").state == STATE_UNAVAILABLE
+    assert hass.states.get(MODE).state == STATE_UNAVAILABLE
+
+
+@pytest.mark.parametrize("style", [[0], {"0": 1}, True, 2, None])
+async def test_unexpected_music_sync_style(
+    hass: HomeAssistant,
+    mock_4d: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    style: object,
+) -> None:
+    """Test a style value of an unexpected type or value makes the select unavailable."""
+    mock_4d.device["style"] = style
+    await setup_integration(hass, mock_config_entry)
+
+    assert hass.states.get(STYLE).state == STATE_UNAVAILABLE
+    assert hass.states.get(MUSIC).state == STATE_OFF
+
+
 async def test_changes_from_the_app_are_polled(
     hass: HomeAssistant,
     mock_4d: AsyncMock,
@@ -213,6 +257,30 @@ async def test_changes_from_the_app_are_polled(
     assert hass.states.get(MUSIC).state == STATE_ON
     # Only the Screen Mirroring settings were fetched, not the full state
     assert mock_4d.get_info.await_count == full_updates
+
+
+async def test_partial_poll_is_still_reported(
+    hass: HomeAssistant,
+    mock_4d: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test a value read before a failing request of the quick poll shows up."""
+    await setup_integration(hass, mock_config_entry)
+    mock_4d.device["rhythm"] = True
+    request = mock_4d._request.side_effect
+
+    async def style_fails(method: str, path: str, data: dict | None = None):
+        if data["write"]["command"] == "getScreenMirrorRhythmModeType":
+            raise NanoleafConnectionError("blip")
+        return await request(method, path, data)
+
+    mock_4d._request.side_effect = style_fails
+    freezer.tick(timedelta(seconds=15))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert hass.states.get(MUSIC).state == STATE_ON
 
 
 async def test_poll_errors_are_left_to_the_regular_update(
