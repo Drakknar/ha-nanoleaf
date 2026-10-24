@@ -7,7 +7,14 @@ through the library's request method, so they share its retries and errors.
 
 from typing import Any
 
-from aionanoleaf2 import EndpointNotFoundError, InvalidResponseError, Nanoleaf
+from aionanoleaf2 import (
+    EndpointNotFoundError,
+    InvalidResponseError,
+    Nanoleaf,
+    NanoleafConnectionError,
+    NanoleafTimeoutError,
+    Unavailable,
+)
 
 # Models with Screen Mirroring (Nanoleaf 4D)
 SCREEN_MIRROR_MODELS = {"NL69"}
@@ -33,10 +40,18 @@ class ScreenMirror:
         )
 
     async def _read(self, command: str, key: str) -> Any:
-        """Return one value of a get command, None if the firmware lacks it."""
+        """Return one value of a get command, None if the firmware lacks it.
+
+        Only a lost connection or a timeout is raised. An HTTP error status
+        (other than 401) means the device is reachable but refused this
+        command, which should only make the Music Sync entities unavailable,
+        not the whole device.
+        """
         try:
             payload = await self._write(command)
-        except (EndpointNotFoundError, InvalidResponseError):
+        except (NanoleafConnectionError, NanoleafTimeoutError):
+            raise
+        except (EndpointNotFoundError, InvalidResponseError, Unavailable):
             return None
         return payload.get(key) if isinstance(payload, dict) else None
 
