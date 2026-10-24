@@ -20,10 +20,16 @@ from .const import DOMAIN
 from .coordinator import NanoleafConfigEntry, NanoleafCoordinator
 from .entity import NanoleafEntity, async_handle_nanoleaf_errors
 
-RESERVED_EFFECTS = ("*Solid*", "*Static*", "*Dynamic*")
+# *ExtControl* is reported while the light is streamed to, e.g. by a 4D with Sync+.
+RESERVED_EFFECTS = ("*Solid*", "*Static*", "*Dynamic*", "*ExtControl*")
 # Reported as the active effect while a Screen Mirroring mode of a Nanoleaf 4D runs.
 EMERSION_EFFECT = "*Emersion*"
 DEFAULT_NAME = "Nanoleaf"
+
+
+def _to_device_brightness(brightness: int) -> int:
+    """Convert Home Assistant brightness (1-255) to device brightness (1-100)."""
+    return max(1, round(brightness * 100 / 255))
 
 
 async def async_setup_entry(
@@ -47,6 +53,9 @@ class NanoleafLight(NanoleafEntity, LightEntity):
         """Initialize the Nanoleaf light."""
         super().__init__(coordinator)
         self._attr_unique_id = self._nanoleaf.serial_no
+        # A fade-out leaves the device at brightness 0. Turning on without a
+        # brightness then restores this level instead of the device's 100%.
+        self._brightness_before_fade: int | None = None
         self._attr_max_color_temp_kelvin = self._nanoleaf.color_temperature_max
         self._attr_min_color_temp_kelvin = self._nanoleaf.color_temperature_min
 
@@ -54,7 +63,7 @@ class NanoleafLight(NanoleafEntity, LightEntity):
     @override
     def brightness(self) -> int:
         """Return the brightness of the light."""
-        return int(self._nanoleaf.brightness * 2.55)
+        return round(self._nanoleaf.brightness * 255 / 100)
 
     @property
     @override
@@ -136,23 +145,35 @@ class NanoleafLight(NanoleafEntity, LightEntity):
             else:
                 # Not a regular effect, so it is a Screen Mirroring mode.
                 await self._nanoleaf.set_emersion(effect)
-        elif hs_color:
-            hue, saturation = hs_color
-            await self._nanoleaf.set_hue(int(hue))
-            await self._nanoleaf.set_saturation(int(saturation))
-        elif color_temp_kelvin:
-            await self._nanoleaf.set_color_temperature(color_temp_kelvin)
-        if transition:
-            if brightness:  # tune to the required brightness in n seconds
-                await self._nanoleaf.set_brightness(
-                    int(brightness / 2.55), transition=int(kwargs[ATTR_TRANSITION])
-                )
-            else:  # If brightness is not specified, assume full brightness
-                await self._nanoleaf.set_brightness(100, transition=int(transition))
-        else:  # If no transition is occurring, turn on the light
-            await self._nanoleaf.turn_on()
-            if brightness:
-                await self._nanoleaf.set_brightness(int(brightness / 2.55))
+
+        if brightness:
+            device_brightness: int | None = _to_device_brightness(brightness)
+        elif self._nanoleaf.brightness == 0 or transition:
+            # After a fade-out, or for a fade-in: back to the last level.
+            device_brightness = (
+                self._nanoleaf.brightness or self._brightness_before_fade or 100
+            )
+        else:
+            device_brightness = None
+
+        hue = saturation = color_temperature = None
+        if not effect:
+            if hs_color:
+                hue, saturation = (int(value) for value in hs_color)
+            elif color_temp_kelvin:
+                color_temperature = color_temp_kelvin
+
+        # One request, so color and brightness change together. Brightness
+        # with a duration fades in and turns the light on by itself.
+        await self._nanoleaf.set_state(
+            on=None if transition else True,
+            brightness=device_brightness,
+            brightness_transition=int(transition) if transition else None,
+            hue=hue,
+            saturation=saturation,
+            color_temperature=color_temperature,
+        )
+        self._brightness_before_fade = None
         await self.coordinator.async_refresh()
 
     @override
@@ -160,5 +181,7 @@ class NanoleafLight(NanoleafEntity, LightEntity):
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Instruct the light to turn off."""
         transition: float | None = kwargs.get(ATTR_TRANSITION)
+        if transition is not None and self._nanoleaf.brightness:
+            self._brightness_before_fade = self._nanoleaf.brightness
         await self._nanoleaf.turn_off(None if transition is None else int(transition))
         await self.coordinator.async_refresh()
