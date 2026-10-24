@@ -1,0 +1,305 @@
+name: Compatibility review
+
+# Daily check for new versions of what this repository depends on:
+# Home Assistant core (stable releases incl. patches, and new betas) and
+# the aionanoleaf2 library (published releases only, never branch commits).
+# Each new version is reviewed once by Claude: nothing to do opens nothing (the
+# report is in the run summary), a fix comes as a pull request, anything that
+# needs you as an issue, and new features worth using as an "enhancement" issue.
+# What has been reviewed is kept on the watch-state branch.
+on:
+  schedule:
+    - cron: "37 5 * * *"
+  workflow_dispatch:
+    inputs:
+      force:
+        description: >-
+          Repeat reviews already done for the current versions (each covers the
+          same range as the first time; a version only recorded as the starting
+          point has nothing to compare with)
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: compat-review
+  cancel-in-progress: false
+
+jobs:
+  detect:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # first-run baselines go to the watch-state branch
+    outputs:
+      run: ${{ steps.detect.outputs.run }}
+      keys: ${{ steps.detect.outputs.keys }}
+      subject: ${{ steps.detect.outputs.subject }}
+      context: ${{ steps.detect.outputs.context }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find new versions
+        id: detect
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force || 'false' }}
+        run: |
+          set -euo pipefail
+          w() { bash .github/scripts/watch.sh "$@" </dev/null; }
+          due() { [ "$FORCE" = true ] || [ "$(w should-run "$1")" = true ]; }
+          ctx=$RUNNER_TEMP/watch-context.md
+          : > "$ctx"
+          keys=()
+          subjects=()
+
+          # Home Assistant, two tracks:
+          # - every stable release, patch releases included (ha:<tag>), compared
+          #   with the last stable one reviewed (ha:stable). An X.Y.0 whose beta
+          #   was reviewed is compared with that beta instead.
+          # - the first beta of a new minor release (ha:<minor>), compared with
+          #   the last stable one, so a breaking change shows up before the
+          #   release reaches you.
+          tags=$(gh api "repos/home-assistant/core/releases?per_page=50" --jq '.[].tag_name' \
+            | grep -E '^[0-9]{4}\.[0-9]+\.[0-9]+(b[0-9]+)?$')
+          stable=$(grep -v b <<<"$tags" | sort -V | tail -n1)
+          minor=$(sort -V <<<"$tags" | tail -n1 | cut -d. -f1,2)
+          last_stable=$(w get ha:stable)
+          last_stable=${last_stable:-$(w get ha:last)}
+          last_stable=${last_stable:-$(jq -r .homeassistant hacs.json)}
+
+          if due "ha:$stable"; then
+            # A repeat (force) covers the same range as the first review.
+            prev=$(w get "ha:from:$stable")
+            if [ -z "$prev" ] && [ "${stable##*.}" = 0 ]; then
+              prev=$(w get "ha:beta:${stable%.*}")
+            fi
+            prev=${prev:-$last_stable}
+            if [ "$prev" = "$stable" ]; then
+              # Already covered by an earlier review: only the starting point.
+              [ "$FORCE" = true ] || w set "ha:$stable=baseline:$(date -u +%F)" "ha:stable=$stable"
+            else
+              keys+=("ha:$stable=@" "ha:from:$stable=$prev" "ha:stable=$stable")
+              subjects+=("Home Assistant $stable")
+              cat >> "$ctx" <<CTX
+          ## Home Assistant core (stable release)
+          - Last reviewed: $prev. New: $stable.
+          - Source: https://github.com/home-assistant/core/compare/$prev...$stable
+          - Frontend version each release ships: homeassistant/components/frontend/manifest.json at that tag.
+
+          CTX
+            fi
+          fi
+
+          # The newest minor has no stable release yet: review its newest beta.
+          minor_stable=$(grep -v b <<<"$tags" | grep "^$minor\." || true)
+          if [ -z "$minor_stable" ] && due "ha:$minor"; then
+            beta=$(grep "^$minor\." <<<"$tags" | sort -V | tail -n1)
+            prev=$(w get "ha:from:$minor")
+            prev=${prev:-$stable}
+            keys+=("ha:$minor=@" "ha:from:$minor=$prev" "ha:beta:$minor=$beta")
+            subjects+=("Home Assistant $beta")
+            cat >> "$ctx" <<CTX
+          ## Home Assistant core (beta)
+          - Last reviewed: $prev. New: $beta. This is a beta; the final release follows about a week later.
+          - Source: https://github.com/home-assistant/core/compare/$prev...$beta
+          - Frontend version each release ships: homeassistant/components/frontend/manifest.json at that tag.
+
+          CTX
+          fi
+
+          # aionanoleaf2: each published release. The manifest pins one version,
+          # so that version is the starting point; commits are not reviewed.
+          rel=$(gh api repos/loebi-ch/aionanoleaf2/releases/latest --jq .tag_name)
+          pinned=v$(jq -r '.requirements[] | select(startswith("aionanoleaf2==")) | ltrimstr("aionanoleaf2==")' custom_components/nanoleaf/manifest.json)
+          prev=$(w get lib:last)
+          # Already reviewed: a repeat (force) covers the same range again.
+          [ "$prev" != "$rel" ] || prev=$(w get "lib:from:$rel")
+          prev=${prev:-$pinned}
+          if [ "$prev" = "$rel" ]; then
+            # The pinned version itself: only the starting point.
+            [ "$FORCE" = true ] || [ -n "$(w get "lib:$rel")" ] || w set "lib:$rel=baseline:$(date -u +%F)" "lib:last=$rel"
+          elif due "lib:$rel"; then
+            keys+=("lib:$rel=@" "lib:from:$rel=$prev" "lib:last=$rel")
+            subjects+=("aionanoleaf2 $rel")
+            cat >> "$ctx" <<CTX
+          ## aionanoleaf2
+          - Last reviewed: $prev. New: $rel. The manifest pins $pinned.
+          - Release: https://github.com/loebi-ch/aionanoleaf2/releases/tag/$rel
+          - Source: https://github.com/loebi-ch/aionanoleaf2/compare/$prev...$rel
+
+          CTX
+          fi
+
+          if [ ${#keys[@]} -eq 0 ]; then
+            echo "Nothing new to review."
+            echo "run=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          subject=$(printf '%s, ' "${subjects[@]}")
+          subject=${subject%, }
+          echo "Reviewing: $subject"
+          {
+            echo "run=true"
+            echo "keys=${keys[*]}"
+            echo "subject=$subject"
+            echo "context<<CTX_EOF"
+            echo "# Review: $subject"
+            echo
+            cat "$ctx"
+            echo "CTX_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+  review:
+    needs: detect
+    if: needs.detect.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      # No cache: a cache saved after Claude's run could carry planted files
+      # into later runs.
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: false
+
+      - name: Write context
+        env:
+          CONTEXT: ${{ needs.detect.outputs.context }}
+        run: printf '%s\n' "$CONTEXT" > "$RUNNER_TEMP/watch-context.md"
+
+      # Claude reads untrusted upstream content, so the commands it runs are
+      # kept away from the Claude token (tested 2026-10-11):
+      # - the action's subprocess scrub (CLAUDE_CODE_SUBPROCESS_ENV_SCRUB below)
+      #   removes it from their environment, and bubblewrap hides every other
+      #   process from them (the action installs it only for workflows open to
+      #   outside users, so it is installed here);
+      # - no process can read another's memory (ptrace_scope 2), and sudo is
+      #   gone for the rest of the job, so nothing can read the runner's memory.
+      # - Docker is switched off: access to it amounts to root.
+      # What remains visible to them is the job's read-only GitHub token.
+      - name: Isolate Claude's commands
+        run: |
+          set -euo pipefail
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq --no-install-recommends bubblewrap socat >/dev/null
+          if [ -f /proc/sys/kernel/apparmor_restrict_unprivileged_userns ]; then
+            sudo sysctl -qw kernel.apparmor_restrict_unprivileged_userns=0
+          fi
+          sudo sysctl -qw kernel.yama.ptrace_scope=2
+          sudo chmod 600 /var/run/docker.sock
+          sudo rm -f /etc/sudoers.d/runner
+          if sudo -n true 2>/dev/null; then
+            echo "::error::sudo is still available"
+            exit 1
+          fi
+
+      - name: Claude
+        id: claude
+        uses: anthropics/claude-code-action@v1
+        env:
+          CLAUDE_CODE_SUBPROCESS_ENV_SCRUB: "1"
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          github_token: ${{ github.token }}
+          prompt: >-
+            Follow the instructions in .github/prompts/ha-compat.md.
+            The facts for this run are in ${{ runner.temp }}/watch-context.md.
+          claude_args: >-
+            --model opus
+            --max-turns 120
+            --allowedTools "Bash,Read,Edit,Write,Glob,Grep,WebFetch,WebSearch,TodoWrite"
+            --json-schema '{"type":"object","properties":{"status":{"type":"string","enum":["clear","fixed","needs_attention","transient"]},"title":{"type":"string"},"report":{"type":"string"},"improvements":{"type":"string"}},"required":["status","title","report","improvements"]}'
+
+      # Runs after Claude in the same job, so it ignores what Claude's commands
+      # could have planted: variables written to $GITHUB_ENV (the step's own env
+      # wins), directories added to PATH (absolute shell, fixed PATH) and hooks,
+      # config or filters in the workspace's .git (the diff is made in a fresh
+      # clone). JavaScript actions can't be shielded the same way (a planted
+      # NODE_OPTIONS wins over the step's), so after Claude only the artifact
+      # upload is one; code planted there still can't reach the Claude token.
+      # Only the verdict and the diff leave this job. The report job, which can
+      # write, turns them into a pull request or issues.
+      - name: Collect result
+        if: always()
+        shell: /bin/bash --noprofile --norc -eo pipefail {0}
+        env:
+          VERDICT: ${{ steps.claude.outputs.structured_output }}
+          BASH_ENV: ""
+          ENV: ""
+        run: |
+          export PATH=/usr/bin:/bin GIT_CONFIG_GLOBAL=/dev/null GIT_CONFIG_NOSYSTEM=1
+          out="$RUNNER_TEMP/watch"
+          clean="$RUNNER_TEMP/watch-clean"
+          mkdir -p "$out"
+          printf '%s' "$VERDICT" > "$out/verdict.json"
+          git clone -q --no-checkout "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" "$clean"
+          git -C "$clean" -c advice.detachedHead=false checkout -q "$GITHUB_SHA"
+          rsync -a --delete --exclude=/.git --exclude=/.github "$GITHUB_WORKSPACE/" "$clean/"
+          # Claude's sandbox leaves empty placeholder files (.env, .npmrc,
+          # package.json, lock files) where it blocks writes. A review never needs
+          # to add an empty file, so new empty files are dropped.
+          git -C "$clean" ls-files -z --others --exclude-standard |
+            (cd "$clean" && xargs -0 -r -I{} find {} -maxdepth 0 -type f -empty -delete)
+          git -C "$clean" add -A
+          git -C "$clean" diff --cached --binary > "$out/changes.patch"
+          git -C "$clean" diff --cached --stat
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: watch
+          path: ${{ runner.temp }}/watch/
+          retention-days: 1
+
+  report:
+    needs: [detect, review]
+    if: always() && needs.review.result != 'skipped'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75 # includes waiting for the check on a proposed fix
+    permissions:
+      contents: write
+      issues: write
+      pull-requests: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: watch
+          path: ${{ runner.temp }}/watch
+
+      # WATCH_SECRET only lets the script refuse to publish output that contains
+      # the Claude token. No code from the review runs in this job.
+      - name: Open pull request / issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          WATCH_SECRET: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          WATCH_KEYS: ${{ needs.detect.outputs.keys }}
+          WATCH_SUBJECT: ${{ needs.detect.outputs.subject }}
+          WATCH_BRANCH: claude/compat-${{ github.run_number }}
+          WATCH_CLEAR_POLICY: strict
+        run: bash .github/scripts/watch.sh report "$RUNNER_TEMP/watch"
+
+      # Artifacts of public repositories can be downloaded by anyone signed in
+      # to GitHub, so the review's raw output doesn't outlive this run.
+      - name: Delete the review's files
+        if: always()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api "repos/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID/artifacts" \
+            --jq '.artifacts[] | select(.name == "watch") | .id' |
+            while read -r id; do
+              gh api -X DELETE "repos/$GITHUB_REPOSITORY/actions/artifacts/$id"
+            done
