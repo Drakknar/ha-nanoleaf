@@ -218,6 +218,21 @@ async def test_music_sync_read_connection_error(
     assert hass.states.get(MODE).state == STATE_UNAVAILABLE
 
 
+@pytest.mark.parametrize("style", [[0], {"0": 1}, True, 2, None])
+async def test_unexpected_music_sync_style(
+    hass: HomeAssistant,
+    mock_4d: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    style: object,
+) -> None:
+    """Test a style value of an unexpected type or value makes the select unavailable."""
+    mock_4d.device["style"] = style
+    await setup_integration(hass, mock_config_entry)
+
+    assert hass.states.get(STYLE).state == STATE_UNAVAILABLE
+    assert hass.states.get(MUSIC).state == STATE_OFF
+
+
 async def test_changes_from_the_app_are_polled(
     hass: HomeAssistant,
     mock_4d: AsyncMock,

@@ -64,7 +64,11 @@ class ScreenMirror:
         style = await self._read(
             "getScreenMirrorRhythmModeType", "screenMirrorRhythmModeType"
         )
-        self.music_sync_style = MUSIC_SYNC_STYLES.get(style)
+        self.music_sync_style = (
+            MUSIC_SYNC_STYLES.get(style)
+            if isinstance(style, int) and not isinstance(style, bool)
+            else None
+        )
 
     async def async_set_music_sync(self, music_sync: bool) -> None:
         """Switch Music Sync on or off."""
