@@ -1,12 +1,15 @@
 """The Nanoleaf integration."""
 
-from __future__ import annotations
-
-import asyncio
-from contextlib import suppress
 import logging
 
-from aionanoleaf2 import EffectsEvent, Nanoleaf, StateEvent, TouchEvent
+from aionanoleaf2 import (
+    AuthError,
+    EffectsEvent,
+    Nanoleaf,
+    NanoleafError,
+    StateEvent,
+    TouchEvent,
+)
 
 from homeassistant.const import (
     CONF_DEVICE_ID,
@@ -66,20 +69,34 @@ async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> 
                 hass, f"nanoleaf_gesture_{nanoleaf.serial_no}", gesture_type
             )
 
-    event_listener = asyncio.create_task(
-        nanoleaf.listen_events(
-            state_callback=light_event_callback,
-            effects_callback=light_event_callback,
-            touch_callback=touch_event_callback if supports_touch else None,
+    if nanoleaf.supports_events:
+
+        async def _async_listen_events() -> None:
+            """Listen for pushed events until the entry is unloaded."""
+            try:
+                await nanoleaf.listen_events(
+                    state_callback=light_event_callback,
+                    effects_callback=light_event_callback,
+                    touch_callback=touch_event_callback if supports_touch else None,
+                )
+            except AuthError:
+                _LOGGER.warning(
+                    "Nanoleaf %s rejected the access token, starting reauthentication",
+                    entry.title,
+                )
+                entry.async_start_reauth(hass)
+            except NanoleafError as err:
+                _LOGGER.warning(
+                    "Nanoleaf %s event listener stopped, falling back to polling: %s",
+                    entry.title,
+                    err,
+                )
+
+        entry.async_create_background_task(
+            hass,
+            _async_listen_events(),
+            f"{DOMAIN} {entry.title} event listener",
         )
-    )
-
-    async def _cancel_listener() -> None:
-        event_listener.cancel()
-        with suppress(asyncio.CancelledError):
-            await event_listener
-
-    entry.async_on_unload(_cancel_listener)
 
     entry.runtime_data = coordinator
 
