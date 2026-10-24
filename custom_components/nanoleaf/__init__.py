@@ -1,5 +1,6 @@
 """The Nanoleaf integration."""
 
+from datetime import datetime, timedelta
 import logging
 
 from aionanoleaf2 import (
@@ -22,13 +23,23 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.event import async_track_time_interval
 
 from .const import DOMAIN, NANOLEAF_EVENT, TOUCH_GESTURE_TRIGGER_MAP, TOUCH_MODELS
 from .coordinator import NanoleafConfigEntry, NanoleafCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.BUTTON, Platform.EVENT, Platform.LIGHT]
+PLATFORMS = [
+    Platform.BUTTON,
+    Platform.EVENT,
+    Platform.LIGHT,
+    Platform.SELECT,
+    Platform.SWITCH,
+]
+
+# Screen Mirroring changes are not pushed by the device
+SCREEN_MIRROR_INTERVAL = timedelta(seconds=15)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> bool:
@@ -96,6 +107,20 @@ async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> 
             hass,
             _async_listen_events(),
             f"{DOMAIN} {entry.title} event listener",
+        )
+
+    if coordinator.supports_screen_mirror:
+
+        async def _async_refresh_screen_mirror(_now: datetime) -> None:
+            await coordinator.async_refresh_screen_mirror()
+
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass,
+                _async_refresh_screen_mirror,
+                SCREEN_MIRROR_INTERVAL,
+                name=f"{DOMAIN} {entry.title} screen mirror refresh",
+            )
         )
 
     entry.runtime_data = coordinator

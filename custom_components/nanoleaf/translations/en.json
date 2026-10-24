@@ -66,6 +66,23 @@
           }
         }
       }
+    },
+    "select": {
+      "music_sync_style": {
+        "name": "Music sync style",
+        "state": {
+          "fireworks": "Fireworks",
+          "pulse": "Pulse"
+        }
+      },
+      "screen_mirror_mode": {
+        "name": "Screen mirror mode"
+      }
+    },
+    "switch": {
+      "music_sync": {
+        "name": "Music sync"
+      }
     }
   },
   "exceptions": {

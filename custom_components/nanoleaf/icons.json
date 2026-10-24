@@ -9,6 +9,25 @@
       "light": {
         "default": "mdi:triangle-outline"
       }
+    },
+    "select": {
+      "music_sync_style": {
+        "default": "mdi:firework",
+        "state": {
+          "pulse": "mdi:pulse"
+        }
+      },
+      "screen_mirror_mode": {
+        "default": "mdi:television-ambient-light"
+      }
+    },
+    "switch": {
+      "music_sync": {
+        "default": "mdi:music",
+        "state": {
+          "off": "mdi:music-off"
+        }
+      }
     }
   }
 }
