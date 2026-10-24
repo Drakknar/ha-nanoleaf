@@ -1,58 +1,57 @@
-> [!IMPORTANT]
-> **This custom integration is no longer maintained.**
-> Starting with Home Assistant **2026.11**, the built-in [Nanoleaf integration](https://www.home-assistant.io/integrations/nanoleaf/) supports everything this custom integration offers: Nanoleaf Essentials, the Screen Mirroring modes of the Nanoleaf 4D (as light effects), and fixes for newer firmware versions.
->
-> Until then you can keep using this custom integration. After updating to 2026.11, remove it (in HACS, or by deleting `config/custom_components/nanoleaf`), restart Home Assistant and use the built-in integration. A custom integration with the same domain overrides the built-in one, so it has to be removed.
+# Nanoleaf (with 4D Screen Mirroring controls)
 
-# Nanoleaf
+A fork of [loebi-ch/nanoleaf](https://github.com/loebi-ch/nanoleaf), kept in line with Home Assistant's built-in [Nanoleaf integration](https://www.home-assistant.io/integrations/nanoleaf/) and extended with the Nanoleaf 4D Screen Mirroring settings that the built-in integration doesn't offer yet.
 
-[![GitHub Release](https://img.shields.io/github/v/release/loebi-ch/nanoleaf?style=flat-square)](https://github.com/loebi-ch/nanoleaf/releases)
-[![HACS](https://img.shields.io/badge/HACS-Custom-orange.svg?style=flat-square)](https://hacs.xyz/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=flat-square)](https://opensource.org/licenses/MIT)
-[![Home Assistant](https://img.shields.io/badge/Home%20Assistant-Custom%20Integration-41bdf5?style=flat-square&logo=homeassistant)](https://www.home-assistant.io/)
+The code is the built-in integration from Home Assistant `dev` (October 2026), adapted to run on Home Assistant **2026.10 and later**. It uses the same domain (`nanoleaf`), so it replaces the built-in integration while installed and keeps your existing config entries and entities.
 
-**Nanoleaf** is an enhanced Home Assistant custom integration for Nanoleaf devices. It serves as a modern successor to the built-in core integration, adding support for the new **Nanoleaf Essentials** line and **4D Screen Mirroring** capabilities.
+## What it adds
 
-## ✨ Features & Improvements
+### Nanoleaf 4D (NL69)
 
-While the built-in [Nanoleaf integration](https://www.home-assistant.io/integrations/nanoleaf/) works well for legacy panels, it lacks support for newer hardware generations and features. **Nanoleaf** fills this gap:
+| Entity | What it does |
+|---|---|
+| **Screen mirror mode** (select: 1D, 2D, 3D, 4D) | Starts Screen Mirroring in that mode and turns the light on. Empty while a scene or color is shown. The modes are also in the light's effect list, as in the built-in integration. |
+| **Music sync** (switch) | Turns Music Sync on or off for Screen Mirroring. |
+| **Music sync style** (select: Pulse, Fireworks) | How Music Sync reacts to sound. |
 
-* **💡 Nanoleaf Essentials Support:** Full support for the new Essentials line (Bulbs and Lightstrips) using the updated Nanoleaf API.
-* **📺 Screen Mirroring (Nanoleaf 4D):** Control your Nanoleaf 4D Screen Mirror camera directly from Home Assistant. You can now select Screen Mirror modes (1D, 2D, 3D, 4D) directly from the effect list in HA.
-* **🔄 Backwards Compatible:** Fully supports all older Nanoleaf devices (Shapes, Canvas, Lines, etc.) supported by the original integration.
-* **⚙️ Updated Backend:** Built on the `aionanoleaf2` library, which unifies communication with both the legacy API and the new Essentials API.
+The device doesn't push mode or Music Sync changes (for example from the Nanoleaf app), so these three are also fetched every 15 seconds. That's three small requests, made only for a 4D. Everything else is pushed or polled every minute, as before.
 
-## 📥 Installation
+These commands come from section 5.9 of the Nanoleaf OpenAPI and were tested on a 4D running firmware 12.3.3. If your firmware doesn't answer them, the Music Sync entities show as unavailable.
 
-### Option 1: HACS (Recommended)
+Not supported: Sync+ (mirroring onto other Nanoleaf devices), because it isn't part of the local API. While Sync+ streams to another Nanoleaf light, that light shows no effect instead of `*ExtControl*`.
 
-1.  Open **HACS** in Home Assistant.
-2.  Go to "Integrations".
-3.  Click the three dots in the top right corner and select **"Custom repositories"**.
-4.  Paste the repository URL: `https://github.com/loebi-ch/nanoleaf`
-5.  Select **"Integration"** as the category.
-6.  Click **Add**.
-7.  Find **Nanoleaf** in the list and click **Download**.
-8.  Restart Home Assistant.
+### Light fixes (all models)
 
-### Option 2: Manual Installation
+- **Turning on with a transition keeps the brightness.** The built-in integration fades to 100 % when no brightness is given.
+- **Turning on after a fade-out restores the previous brightness.** A fade-out leaves the device at brightness 0, and the device would otherwise come back at 100 %.
+- **Color, color temperature, brightness and power go in one request**, so the light doesn't show an in-between color.
+- **Brightness converts without drift.** 50 % stays 50 %, and the lowest Home Assistant brightness no longer sends 0.
 
-1.  Download the latest release from [GitHub Releases](https://github.com/loebi-ch/nanoleaf/releases).
-2.  Extract the zip file.
-3.  Copy the `nanoleaf` folder into your `config/custom_components/` directory.
-4.  Restart Home Assistant.
+## Installation
 
-## ⚙️ Configuration
+### HACS
 
-1.  Go to **Settings** -> **Devices & Services**.
-2.  Wait for Home Assistant to automatically discover your Nanoleaf devices.
-3.  If not discovered automatically, click **"+ Add Integration"** and search for **Nanoleaf**.
-4.  Follow the setup wizard to pair your devices (you may need to hold the power button on the device to authenticate).
+1. In HACS, open the menu → **Custom repositories**.
+2. Add `https://github.com/Drakknar/ha-nanoleaf` as an **Integration**.
+3. Download **Nanoleaf**, then restart Home Assistant.
 
-## 🤝 Contributing
+If you used `loebi-ch/nanoleaf` before, remove that custom repository from HACS first. It uses the same folder, `custom_components/nanoleaf`.
 
-Contributions are welcome! If you find a bug or have a feature request, please feel free to open an issue or submit a Pull Request.
+### Manual
 
-## 📄 License
+Copy `custom_components/nanoleaf` into your `config/custom_components/` folder and restart Home Assistant.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+Setup is the same as for the built-in integration: Settings → Devices & services → Add integration → Nanoleaf.
+
+## Going back to the built-in integration
+
+Remove `custom_components/nanoleaf` (in HACS, or by deleting the folder) and restart. Your config entry and entities stay. The 4D select and switch entities then become unavailable and can be deleted.
+
+## Development
+
+- `pytest` runs Home Assistant core's Nanoleaf tests, adapted to the custom component, plus tests for this fork's additions (`tests/test_screen_mirror.py`, `tests/test_light_state.py`). It needs `pytest-homeassistant-custom-component` for the Home Assistant version you target.
+- `translations/en.json` is generated: edit `strings.json`, then run `python scripts/build_translations.py`.
+
+## License
+
+MIT, see [LICENSE](LICENSE). Based on the Home Assistant Nanoleaf integration (Apache 2.0) and loebi-ch/nanoleaf.

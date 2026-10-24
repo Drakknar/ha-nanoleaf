@@ -1,12 +1,16 @@
 """The Nanoleaf integration."""
 
-from __future__ import annotations
-
-import asyncio
-from contextlib import suppress
+from datetime import datetime, timedelta
 import logging
 
-from aionanoleaf2 import EffectsEvent, Nanoleaf, StateEvent, TouchEvent
+from aionanoleaf2 import (
+    AuthError,
+    EffectsEvent,
+    Nanoleaf,
+    NanoleafError,
+    StateEvent,
+    TouchEvent,
+)
 
 from homeassistant.const import (
     CONF_DEVICE_ID,
@@ -19,13 +23,23 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.dispatcher import async_dispatcher_send
+from homeassistant.helpers.event import async_track_time_interval
 
 from .const import DOMAIN, NANOLEAF_EVENT, TOUCH_GESTURE_TRIGGER_MAP, TOUCH_MODELS
 from .coordinator import NanoleafConfigEntry, NanoleafCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.BUTTON, Platform.EVENT, Platform.LIGHT]
+PLATFORMS = [
+    Platform.BUTTON,
+    Platform.EVENT,
+    Platform.LIGHT,
+    Platform.SELECT,
+    Platform.SWITCH,
+]
+
+# Screen Mirroring changes are not pushed by the device
+SCREEN_MIRROR_INTERVAL = timedelta(seconds=15)
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> bool:
@@ -66,20 +80,48 @@ async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> 
                 hass, f"nanoleaf_gesture_{nanoleaf.serial_no}", gesture_type
             )
 
-    event_listener = asyncio.create_task(
-        nanoleaf.listen_events(
-            state_callback=light_event_callback,
-            effects_callback=light_event_callback,
-            touch_callback=touch_event_callback if supports_touch else None,
+    if nanoleaf.supports_events:
+
+        async def _async_listen_events() -> None:
+            """Listen for pushed events until the entry is unloaded."""
+            try:
+                await nanoleaf.listen_events(
+                    state_callback=light_event_callback,
+                    effects_callback=light_event_callback,
+                    touch_callback=touch_event_callback if supports_touch else None,
+                )
+            except AuthError:
+                _LOGGER.warning(
+                    "Nanoleaf %s rejected the access token, starting reauthentication",
+                    entry.title,
+                )
+                entry.async_start_reauth(hass)
+            except NanoleafError as err:
+                _LOGGER.warning(
+                    "Nanoleaf %s event listener stopped, falling back to polling: %s",
+                    entry.title,
+                    err,
+                )
+
+        entry.async_create_background_task(
+            hass,
+            _async_listen_events(),
+            f"{DOMAIN} {entry.title} event listener",
         )
-    )
 
-    async def _cancel_listener() -> None:
-        event_listener.cancel()
-        with suppress(asyncio.CancelledError):
-            await event_listener
+    if coordinator.supports_screen_mirror:
 
-    entry.async_on_unload(_cancel_listener)
+        async def _async_refresh_screen_mirror(_now: datetime) -> None:
+            await coordinator.async_refresh_screen_mirror()
+
+        entry.async_on_unload(
+            async_track_time_interval(
+                hass,
+                _async_refresh_screen_mirror,
+                SCREEN_MIRROR_INTERVAL,
+                name=f"{DOMAIN} {entry.title} screen mirror refresh",
+            )
+        )
 
     entry.runtime_data = coordinator
 
