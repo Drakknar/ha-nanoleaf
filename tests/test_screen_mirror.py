@@ -215,6 +215,30 @@ async def test_changes_from_the_app_are_polled(
     assert mock_4d.get_info.await_count == full_updates
 
 
+async def test_partial_poll_is_still_reported(
+    hass: HomeAssistant,
+    mock_4d: AsyncMock,
+    mock_config_entry: MockConfigEntry,
+    freezer: FrozenDateTimeFactory,
+) -> None:
+    """Test a value read before a failing request of the quick poll shows up."""
+    await setup_integration(hass, mock_config_entry)
+    mock_4d.device["rhythm"] = True
+    request = mock_4d._request.side_effect
+
+    async def style_fails(method: str, path: str, data: dict | None = None):
+        if data["write"]["command"] == "getScreenMirrorRhythmModeType":
+            raise NanoleafConnectionError("blip")
+        return await request(method, path, data)
+
+    mock_4d._request.side_effect = style_fails
+    freezer.tick(timedelta(seconds=15))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done(wait_background_tasks=True)
+
+    assert hass.states.get(MUSIC).state == STATE_ON
+
+
 async def test_poll_errors_are_left_to_the_regular_update(
     hass: HomeAssistant,
     mock_4d: AsyncMock,
