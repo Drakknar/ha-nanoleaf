@@ -69,6 +69,8 @@ Verified on the owner's 4D (NL69, firmware 12.3.3, hardware 1.2-1, 47 zones) on 
 - the first beta of a new minor release;
 - every aionanoleaf2 GitHub release.
 
+Model: Sonnet (60 turns) for HA patch releases and aionanoleaf2 releases; Opus (120 turns) when the run includes a beta or an X.Y.0 release. The owner's choice, 2026-10-24.
+
 The main task of a Home Assistant review is keeping `custom_components/nanoleaf/` in line with core's Nanoleaf files; see `.github/prompts/ha-compat.md`.
 
 How it works:
