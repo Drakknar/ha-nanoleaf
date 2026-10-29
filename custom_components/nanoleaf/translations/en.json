@@ -39,16 +39,6 @@
       }
     }
   },
-  "device_automation": {
-    "trigger_type": {
-      "double_tap": "Double tap",
-      "single_tap": "Single tap",
-      "swipe_down": "Swipe down",
-      "swipe_left": "Swipe left",
-      "swipe_right": "Swipe right",
-      "swipe_up": "Swipe up"
-    }
-  },
   "entity": {
     "event": {
       "touch": {
@@ -97,12 +87,6 @@
     },
     "invalid_token": {
       "message": "The access token for the Nanoleaf device is invalid. Please reauthenticate."
-    }
-  },
-  "issues": {
-    "deprecated_device_trigger": {
-      "description": "The Nanoleaf device trigger is deprecated and will be removed in a future release. You can now use the gesture event entity to build automations.",
-      "title": "Nanoleaf device trigger is deprecated"
     }
   }
 }

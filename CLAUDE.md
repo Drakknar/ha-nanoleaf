@@ -4,8 +4,7 @@ Home Assistant core's `nanoleaf` integration, run as a custom integration with t
 
 ## Base
 
-- `custom_components/nanoleaf/`: home-assistant/core `dev` at 724cefe29dd3e866d9fe4024d815f21b1729a0b0 (2026-10-23, "Don't create the Nanoleaf identify button for devices without identify support").
-- `tests/`: home-assistant/core `dev` at bd0a182765eb6b4422bc2b5e86fbb1285131fd89 (2026-10-23).
+- `custom_components/nanoleaf/` and `tests/`: home-assistant/core `2026.11.0b1` (6cfd47af9851a1552ad6f58c926b5814689a9f1d, 2026-10-29). The last Nanoleaf change in it is "Remove deprecated device trigger from nanoleaf" (#188656).
 - `aionanoleaf2==1.2.1`, the same version core pins.
 
 To compare with a newer core: `git diff <base> <tag> -- homeassistant/components/nanoleaf tests/components/nanoleaf` in a core clone, then port it here.
@@ -16,7 +15,7 @@ Keep each of these when porting core changes.
 
 - **2026.10 compatibility shims** (`hacs.json` allows `2026.10.0`). Core `dev` uses APIs that 2026.10 lacks:
   - `async_setup_entry` and `async_unload_entry` return `bool`; unloading uses `async_unload_platforms`, not `async_unload_platforms_or_raise`.
-  - `device_trigger.py` uses `event_trigger.CONF_PLATFORM`, `CONF_EVENT_TYPE` and `CONF_EVENT_DATA`, not `EventTriggerArgument`.
+  - 2026.11 still accepts a `bool` from custom integrations (`custom_integration_behavior=IGNORE`); only core integrations get an error.
   - These can go once `hacs.json` requires a version that has the newer APIs (2026.11).
 - **`manifest.json`:** `version`, `documentation` and `issue_tracker` point to this fork, `@Drakknar` is in `codeowners`, and there is no `categories` (core only).
 - **`translations/en.json`** is generated from `strings.json` by `scripts/build_translations.py`: custom integrations get no `[%key:...%]` resolution. `strings.json` also has `reauth_successful` and `reconfigure_successful`, which core gets from its common strings.
@@ -47,6 +46,8 @@ uv pip install -p .venv "pytest-homeassistant-custom-component==<release for tha
 - The root `conftest.py` enables custom integrations, puts this repository's `custom_components` first, and uses Home Assistant's snapshot serializer.
 - On Windows it also disables `pytest_socket`, and needs stub `fcntl.py`/`resource.py` modules in site-packages.
 - Verified 2026-10-24: 166 passed with harness 0.13.373 (HA 2026.10.2), Python 3.14, Windows.
+- Verified 2026-10-29: 170 passed with harness 0.13.371 (HA 2026.10.0) and 0.13.375 (HA 2026.10.4), Python 3.14, Linux.
+- HA 2026.11.0b1 had no harness yet (0.13.375 can't import it). The code and tests were run inside a core 2026.11.0b1 checkout instead, with `custom_components.nanoleaf` replaced by `homeassistant.components.nanoleaf`, the shims reverted, the two common abort strings removed and core's snapshot used, because core's checks are stricter for core integrations. Result: 170 passed, and nothing was reported as deprecated.
 
 ## Device facts
 
