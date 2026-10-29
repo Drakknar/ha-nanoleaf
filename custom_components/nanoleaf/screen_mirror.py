@@ -49,9 +49,9 @@ class ScreenMirror:
         """
         try:
             payload = await self._write(command)
-        except (NanoleafConnectionError, NanoleafTimeoutError):
+        except NanoleafConnectionError, NanoleafTimeoutError:
             raise
-        except (EndpointNotFoundError, InvalidResponseError, Unavailable):
+        except EndpointNotFoundError, InvalidResponseError, Unavailable:
             return None
         return payload.get(key) if isinstance(payload, dict) else None
 

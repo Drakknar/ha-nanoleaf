@@ -22,12 +22,12 @@ from pytest_homeassistant_custom_component.common import (
 )
 from syrupy.assertion import SnapshotAssertion
 
+from custom_components.nanoleaf.const import DOMAIN
 from homeassistant.components.light import (
     ATTR_EFFECT,
     ATTR_EFFECT_LIST,
     DOMAIN as LIGHT_DOMAIN,
 )
-from custom_components.nanoleaf.const import DOMAIN
 from homeassistant.const import (
     ATTR_ENTITY_ID,
     SERVICE_TURN_OFF,

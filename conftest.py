@@ -16,18 +16,17 @@ if sys.platform == "win32":
 def auto_enable_custom_integrations(enable_custom_integrations):
     """Load the integration from custom_components."""
     # The harness's own testing_config/custom_components shadows ours.
-    import custom_components
+    import custom_components  # noqa: PLC0415
 
     ours = str(Path(__file__).parent / "custom_components")
     if ours not in custom_components.__path__:
         custom_components.__path__.insert(0, ours)
-    return
 
 
 @pytest.fixture
 def snapshot(snapshot):
     """Serialize Home Assistant objects as core's tests do."""
-    from pytest_homeassistant_custom_component.syrupy import (
+    from pytest_homeassistant_custom_component.syrupy import (  # noqa: PLC0415
         HomeAssistantSnapshotExtension,
     )
 
