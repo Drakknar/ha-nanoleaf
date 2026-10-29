@@ -30,7 +30,7 @@
     "aionanoleaf2"
   ],
   "requirements": [
-    "aionanoleaf2==1.2.1"
+    "aionanoleaf2>=1.2.1"
   ],
   "ssdp": [
     {

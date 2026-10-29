@@ -6,7 +6,7 @@ Home Assistant core's `nanoleaf` integration, run as a custom integration with t
 
 - `custom_components/nanoleaf/`: home-assistant/core `dev` at 724cefe29dd3e866d9fe4024d815f21b1729a0b0 (2026-10-23, "Don't create the Nanoleaf identify button for devices without identify support").
 - `tests/`: home-assistant/core `dev` at bd0a182765eb6b4422bc2b5e86fbb1285131fd89 (2026-10-23).
-- `aionanoleaf2==1.2.1`, the same version core pins.
+- `aionanoleaf2>=1.2.1`: at least the version core pins (hassfest rejects an exact pin of a package core depends on).
 
 To compare with a newer core: `git diff <base> <tag> -- homeassistant/components/nanoleaf tests/components/nanoleaf` in a core clone, then port it here.
 
