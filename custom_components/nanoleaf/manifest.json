@@ -52,7 +52,7 @@
       "st": "inanoleaf:nl81"
     }
   ],
-  "version": "2.1.1",
+  "version": "2.2.0",
   "zeroconf": [
     "_nanoleafms._tcp.local.",
     "_nanoleafapi._tcp.local."

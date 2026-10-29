@@ -4,8 +4,7 @@ Home Assistant core's `nanoleaf` integration, run as a custom integration with t
 
 ## Base
 
-- `custom_components/nanoleaf/`: home-assistant/core `dev` at 724cefe29dd3e866d9fe4024d815f21b1729a0b0 (2026-10-23, "Don't create the Nanoleaf identify button for devices without identify support").
-- `tests/`: home-assistant/core `dev` at bd0a182765eb6b4422bc2b5e86fbb1285131fd89 (2026-10-23).
+- `custom_components/nanoleaf/` and `tests/`: home-assistant/core `2026.11.0b0` (dev up to 2026-10-28; adds "Remove deprecated device trigger from nanoleaf", core#188656, on top of the earlier base `dev` 724cefe29dd3e866d9fe4024d815f21b1729a0b0).
 - `aionanoleaf2==1.2.1`, the same version core pins.
 
 To compare with a newer core: `git diff <base> <tag> -- homeassistant/components/nanoleaf tests/components/nanoleaf` in a core clone, then port it here.
@@ -15,9 +14,8 @@ To compare with a newer core: `git diff <base> <tag> -- homeassistant/components
 Keep each of these when porting core changes.
 
 - **2026.10 compatibility shims** (`hacs.json` allows `2026.10.0`). Core `dev` uses APIs that 2026.10 lacks:
-  - `async_setup_entry` and `async_unload_entry` return `bool`; unloading uses `async_unload_platforms`, not `async_unload_platforms_or_raise`.
-  - `device_trigger.py` uses `event_trigger.CONF_PLATFORM`, `CONF_EVENT_TYPE` and `CONF_EVENT_DATA`, not `EventTriggerArgument`.
-  - These can go once `hacs.json` requires a version that has the newer APIs (2026.11).
+  - `async_setup_entry` and `async_unload_entry` return `bool`; unloading uses `async_unload_platforms`, not `async_unload_platforms_or_raise`. 2026.11 still accepts `bool` from custom integrations, with no deprecation (core reports it only for core integrations).
+  - This can go once `hacs.json` requires a version that has the newer APIs (2026.11).
 - **`manifest.json`:** `version`, `documentation` and `issue_tracker` point to this fork, `@Drakknar` is in `codeowners`, and there is no `categories` (core only).
 - **`translations/en.json`** is generated from `strings.json` by `scripts/build_translations.py`: custom integrations get no `[%key:...%]` resolution. `strings.json` also has `reauth_successful` and `reconfigure_successful`, which core gets from its common strings.
 - **4D (NL69) entities:**
@@ -33,7 +31,7 @@ Keep each of these when porting core changes.
 - **Tests:**
   - Core's tests import `custom_components.nanoleaf` and `pytest_homeassistant_custom_component.common`.
   - `tests/test_light.py` expects `set_state` instead of `turn_on` in the error tests.
-  - The snapshot is in the 2026.10 serializer format.
+  - The snapshot is in the 2026.10 serializer format (`'device_id': <ANY>`; core 2026.11 writes the `DeviceEntry` and `'config_subentry_id': None`).
   - Fork-only tests: `tests/test_screen_mirror.py`, `tests/test_light_state.py`.
 
 ## Running the tests
@@ -47,6 +45,7 @@ uv pip install -p .venv "pytest-homeassistant-custom-component==<release for tha
 - The root `conftest.py` enables custom integrations, puts this repository's `custom_components` first, and uses Home Assistant's snapshot serializer.
 - On Windows it also disables `pytest_socket`, and needs stub `fcntl.py`/`resource.py` modules in site-packages.
 - Verified 2026-10-24: 166 passed with harness 0.13.373 (HA 2026.10.2), Python 3.14, Windows.
+- Verified 2026-10-29: 170 passed with harness 0.13.375 (HA 2026.10.4), Python 3.14, Linux. Harness 0.13.375 can't load HA 2026.11.0b0 (`httpx` alias, removed `_clear_logger_overwrites`); in core's own 2026.11.0b0 test setup (`packages/pytest-home-assistant`), with the bool shims reverted and imports rewritten, all 170 passed. The only errors were core's teardown check that rejects the duplicated `reauth_successful`/`reconfigure_successful` strings.
 
 ## Device facts
 
