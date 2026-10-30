@@ -10,13 +10,13 @@ from pytest_homeassistant_custom_component.common import (
 )
 from pytest_unordered import unordered
 
+from custom_components.nanoleaf import DOMAIN
+from custom_components.nanoleaf.device_trigger import async_get_triggers
 from homeassistant.components import automation
 from homeassistant.components.device_automation import (
     DeviceAutomationType,
     DeviceNotFound,
 )
-from custom_components.nanoleaf import DOMAIN
-from custom_components.nanoleaf.device_trigger import async_get_triggers
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import device_registry as dr, issue_registry as ir
 from homeassistant.setup import async_setup_component

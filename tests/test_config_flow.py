@@ -17,8 +17,8 @@ from aionanoleaf2 import (
 import pytest
 from pytest_homeassistant_custom_component.common import MockConfigEntry
 
-from homeassistant import config_entries
 from custom_components.nanoleaf.const import DOMAIN
+from homeassistant import config_entries
 from homeassistant.config_entries import SOURCE_USER
 from homeassistant.const import CONF_HOST, CONF_TOKEN
 from homeassistant.core import HomeAssistant

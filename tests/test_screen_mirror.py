@@ -66,7 +66,7 @@ def mock_4d(mock_nanoleaf: AsyncMock) -> AsyncMock:
     mock_nanoleaf.emersion_list = ["1D", "2D", "3D", "4D"]
     mock_nanoleaf.emersion = "4D"
     mock_nanoleaf.selected_emersion = "4D"
-    mock_nanoleaf._request.side_effect = request
+    mock_nanoleaf._request.side_effect = request  # noqa: SLF001
     mock_nanoleaf.device = device
     return mock_nanoleaf
 
@@ -82,7 +82,7 @@ async def test_no_entities_without_screen_mirroring(
     assert hass.states.get(MODE) is None
     assert hass.states.get(STYLE) is None
     assert hass.states.get(MUSIC) is None
-    mock_nanoleaf._request.assert_not_awaited()
+    mock_nanoleaf._request.assert_not_awaited()  # noqa: SLF001
 
 
 async def test_entities(
@@ -141,7 +141,7 @@ async def test_music_sync(
         SWITCH_DOMAIN, SERVICE_TURN_ON, {ATTR_ENTITY_ID: MUSIC}, blocking=True
     )
     assert hass.states.get(MUSIC).state == STATE_ON
-    assert mock_4d._request.await_args == _effects_write(
+    assert mock_4d._request.await_args == _effects_write(  # noqa: SLF001
         "setScreenMirrorRhythmMode", screenMirrorRhythmMode=True
     )
 
@@ -152,7 +152,7 @@ async def test_music_sync(
         blocking=True,
     )
     assert hass.states.get(STYLE).state == "fireworks"
-    assert mock_4d._request.await_args == _effects_write(
+    assert mock_4d._request.await_args == _effects_write(  # noqa: SLF001
         "setScreenMirrorRhythmModeType", screenMirrorRhythmModeType=1
     )
 
@@ -168,7 +168,7 @@ async def test_music_sync_error(
 ) -> None:
     """Test a failed Music Sync write is a Home Assistant error."""
     await setup_integration(hass, mock_config_entry)
-    mock_4d._request.side_effect = NanoleafConnectionError("down")
+    mock_4d._request.side_effect = NanoleafConnectionError("down")  # noqa: SLF001
 
     with pytest.raises(HomeAssistantError):
         await hass.services.async_call(
@@ -181,7 +181,7 @@ async def test_firmware_without_music_sync(
     hass: HomeAssistant, mock_4d: AsyncMock, mock_config_entry: MockConfigEntry
 ) -> None:
     """Test Music Sync entities are unavailable if the firmware lacks them."""
-    mock_4d._request.side_effect = EndpointNotFoundError("effects")
+    mock_4d._request.side_effect = EndpointNotFoundError("effects")  # noqa: SLF001
     await setup_integration(hass, mock_config_entry)
 
     assert hass.states.get(MUSIC).state == STATE_UNAVAILABLE
@@ -193,9 +193,7 @@ async def test_music_sync_refused_by_the_device(
     hass: HomeAssistant, mock_4d: AsyncMock, mock_config_entry: MockConfigEntry
 ) -> None:
     """Test an HTTP error on a Music Sync read leaves the rest of the device up."""
-    mock_4d._request.side_effect = Unavailable(
-        "Device returned HTTP 400 for 'effects'"
-    )
+    mock_4d._request.side_effect = Unavailable("Device returned HTTP 400 for 'effects'")  # noqa: SLF001
     await setup_integration(hass, mock_config_entry)
 
     assert hass.states.get("light.nanoleaf").state != STATE_UNAVAILABLE
@@ -209,7 +207,7 @@ async def test_music_sync_read_connection_error(
 ) -> None:
     """Test a lost connection on a Music Sync read still fails the update."""
     await setup_integration(hass, mock_config_entry)
-    mock_4d._request.side_effect = NanoleafConnectionError("down")
+    mock_4d._request.side_effect = NanoleafConnectionError("down")  # noqa: SLF001
 
     await mock_config_entry.runtime_data.async_refresh()
     await hass.async_block_till_done()
@@ -268,14 +266,14 @@ async def test_partial_poll_is_still_reported(
     """Test a value read before a failing request of the quick poll shows up."""
     await setup_integration(hass, mock_config_entry)
     mock_4d.device["rhythm"] = True
-    request = mock_4d._request.side_effect
+    request = mock_4d._request.side_effect  # noqa: SLF001
 
     async def style_fails(method: str, path: str, data: dict | None = None):
         if data["write"]["command"] == "getScreenMirrorRhythmModeType":
             raise NanoleafConnectionError("blip")
         return await request(method, path, data)
 
-    mock_4d._request.side_effect = style_fails
+    mock_4d._request.side_effect = style_fails  # noqa: SLF001
     freezer.tick(timedelta(seconds=15))
     async_fire_time_changed(hass)
     await hass.async_block_till_done(wait_background_tasks=True)

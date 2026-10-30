@@ -95,23 +95,24 @@ jobs:
             fi
           fi
 
-          # aionanoleaf2: each published release. The manifest pins one version,
-          # so that version is the starting point; commits are not reviewed.
+          # aionanoleaf2: each published release. The manifest's minimum version
+          # (hassfest wants ">=" for a package core also depends on) is the
+          # starting point; commits are not reviewed.
           rel=$(gh api repos/loebi-ch/aionanoleaf2/releases/latest --jq .tag_name)
-          pinned=v$(jq -r '.requirements[] | select(startswith("aionanoleaf2==")) | ltrimstr("aionanoleaf2==")' custom_components/nanoleaf/manifest.json)
+          pinned=v$(jq -r '.requirements[] | select(startswith("aionanoleaf2>=")) | ltrimstr("aionanoleaf2>=")' custom_components/nanoleaf/manifest.json)
           prev=$(w get lib:last)
           # Already reviewed: a repeat (force) covers the same range again.
           [ "$prev" != "$rel" ] || prev=$(w get "lib:from:$rel")
           prev=${prev:-$pinned}
           if [ "$prev" = "$rel" ]; then
-            # The pinned version itself: only the starting point.
+            # The minimum version itself: only the starting point.
             [ "$FORCE" = true ] || [ -n "$(w get "lib:$rel")" ] || w set "lib:$rel=baseline:$(date -u +%F)" "lib:last=$rel"
           elif due "lib:$rel"; then
             keys+=("lib:$rel=@" "lib:from:$rel=$prev" "lib:last=$rel")
             subjects+=("aionanoleaf2 $rel")
             cat >> "$ctx" <<CTX
           ## aionanoleaf2
-          - Last reviewed: $prev. New: $rel. The manifest pins $pinned.
+          - Last reviewed: $prev. New: $rel. The manifest requires at least $pinned.
           - Release: https://github.com/loebi-ch/aionanoleaf2/releases/tag/$rel
           - Source: https://github.com/loebi-ch/aionanoleaf2/compare/$prev...$rel
 

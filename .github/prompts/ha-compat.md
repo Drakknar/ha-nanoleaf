@@ -54,7 +54,7 @@ Status:
   - Update the base commit in CLAUDE.md to the tag you compared with.
 - **Tests:** follow "Running the tests" in CLAUDE.md, with the new Home Assistant version.
   - Make a venv with the Python version that Home Assistant release requires: `uv venv -p 3.x "$RUNNER_TEMP/venv"`.
-  - Install `homeassistant==<new>`, the `pytest-homeassistant-custom-component` release pinned to that version, and the `aionanoleaf2` version from `manifest.json`.
+  - Install `homeassistant==<new>`, the `pytest-homeassistant-custom-component` release pinned to that version, and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`.
   - Run `pytest` in the repository root.
   - If no harness release matches that version yet, use the newest one and say so in the report.
   - Also run the tests with the oldest version in `hacs.json` when you change anything the shims cover.
@@ -69,8 +69,8 @@ Status:
   - For a new release, diff the library between the two tags.
   - Check every attribute and method the integration uses, including the private `_request` that `screen_mirror.py` uses for Music Sync.
   - If the release adds public Music Sync methods, switch `screen_mirror.py` to them.
-  - Raising the pinned version in `manifest.json` is a fix: run the tests with the new version.
-  - Never change the pin without testing it.
+  - Raising the minimum version (`aionanoleaf2>=`) in `manifest.json` is a fix: run the tests with the new version.
+  - Never raise it without testing it, and keep `>=`: hassfest rejects an exact pin of a package core depends on.
 - **The Nanoleaf device API:** CLAUDE.md "Device facts" lists what was verified on a real 4D. You can't reach a device from the runner. If an upstream change touches these commands, say so and leave the live check to the owner.
 
 ## Your result

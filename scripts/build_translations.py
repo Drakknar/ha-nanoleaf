@@ -14,9 +14,7 @@ import sys
 from urllib.request import urlopen
 
 COMPONENT = Path(__file__).parent.parent / "custom_components" / "nanoleaf"
-COMMON_URL = (
-    "https://raw.githubusercontent.com/home-assistant/core/{ref}/homeassistant/strings.json"
-)
+COMMON_URL = "https://raw.githubusercontent.com/home-assistant/core/{ref}/homeassistant/strings.json"
 KEY = re.compile(r"\[%key:([a-z0-9_:]+)%\]")
 
 
