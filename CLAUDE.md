@@ -23,7 +23,7 @@ Keep each of these when porting core changes.
 - **4D (NL69) entities:**
   - Files: `screen_mirror.py`, `select.py` and `switch.py`, plus `coordinator.py` (`screen_mirror`, `supports_screen_mirror`, `async_refresh_screen_mirror`) and `__init__.py` (`Platform.SELECT`/`SWITCH`, the 15 s `SCREEN_MIRROR_INTERVAL`).
   - Entities: select "Screen mirror mode" (1D–4D; `None` while the effect isn't `*Emersion*`), switch "Music sync" and select "Music sync style" (pulse/fireworks).
-  - Music Sync goes through `Nanoleaf._request`, because aionanoleaf2 has no public method for it. That's why the version is pinned.
+  - Music Sync goes through `Nanoleaf._request`, because aionanoleaf2 has no public method for it. The manifest only sets a minimum (`aionanoleaf2>=1.2.1`), so a new library release can break this: the compatibility review checks each one.
 - **Light fixes** (`light.py`):
   - turn-on sends power, brightness and color in one `set_state`;
   - a transition without brightness keeps the current level (core: 100 %);
@@ -81,4 +81,4 @@ How it works:
 
 ## Deploying
 
-The owner deploys `main` with `git ship` (local tool, `projects/_tools`). It copies `custom_components/nanoleaf` to HA's `config/custom_components/nanoleaf` and offers a restart. HA has no HACS entry for this repository; loebi-ch's HACS repository was removed on 2026-10-24.
+The owner deploys `main` with `git ship` (local tool, `projects/_tools`). It copies `custom_components/nanoleaf` to HA's `config/custom_components/nanoleaf` and offers a restart. Merging a new manifest version also publishes a GitHub release for HACS (`.github/workflows/release.yml`). loebi-ch's HACS repository was removed on 2026-10-24.
