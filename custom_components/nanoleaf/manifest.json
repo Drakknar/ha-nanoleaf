@@ -10,6 +10,7 @@
     "@Drakknar"
   ],
   "config_flow": true,
+  "connectivity": ["network"],
   "documentation": "https://github.com/Drakknar/ha-nanoleaf",
   "homekit": {
     "models": [
