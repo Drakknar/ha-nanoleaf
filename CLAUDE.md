@@ -42,8 +42,8 @@ uv pip install -p .venv "homeassistant==<version>" "aionanoleaf2>=1.2.1" \
 
 The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
 
-- The root `conftest.py` puts this repository's `custom_components` ahead of the harness's own `testing_config/custom_components` package (the harness already enables custom integrations and uses Home Assistant's snapshot serializer).
-- On Windows it also disables `pytest_socket`, and needs stub `fcntl.py`/`resource.py` modules in site-packages.
+- The harness enables custom integrations by default and uses Home Assistant's snapshot serializer; its bundled test components live inside `pytest_homeassistant`, so nothing shadows this repository's `custom_components`.
+- On Windows the root `conftest.py` disables `pytest_socket`, and the venv needs stub `fcntl.py`/`resource.py` modules in site-packages.
 - History: up to 2.2.0 the fork kept shims for 2026.10 and ran on `pytest-homeassistant-custom-component` (170 passed on 0.13.371/0.13.375, Linux).
 
 ## Device facts
