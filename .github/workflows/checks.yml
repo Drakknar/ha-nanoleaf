@@ -47,7 +47,7 @@ jobs:
           uv pip install "homeassistant==$ha" "pytest-homeassistant==$ha"
           # Everything else within this Home Assistant's own pins; a package it doesn't
           # list there (aionanoleaf2 included) stays as requested.
-          constraints=$("$VIRTUAL_ENV/bin/python" -c 'import homeassistant, pathlib; print(pathlib.Path(homeassistant.__file__).parent / "package_constraints.txt")')
+          constraints=$("$VIRTUAL_ENV/bin/python" -c 'import importlib.util, pathlib; print(pathlib.Path(importlib.util.find_spec("homeassistant").origin).parent / "package_constraints.txt")')
           test -f "$constraints"
           uv pip install -c "$constraints" "aionanoleaf2==$lib_min" "${reqs[@]}"
 
