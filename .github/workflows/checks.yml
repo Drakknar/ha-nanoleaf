@@ -32,7 +32,9 @@ jobs:
           ha=$(jq -er .homeassistant hacs.json)
           uv venv -p 3.14 "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
-          mapfile -t reqs < <(jq -r '.requirements[]' custom_components/nanoleaf/manifest.json)
+          # Read into a variable first: a failure inside <(...) would go unnoticed.
+          req_list=$(jq -er '.requirements[]' custom_components/nanoleaf/manifest.json)
+          mapfile -t reqs <<< "$req_list"
           VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install \
             "homeassistant==$ha" "pytest-homeassistant==$ha" "${reqs[@]}"
 
