@@ -2,7 +2,7 @@
 
 A fork of [loebi-ch/nanoleaf](https://github.com/loebi-ch/nanoleaf), kept in line with Home Assistant's built-in [Nanoleaf integration](https://www.home-assistant.io/integrations/nanoleaf/) and extended with the Nanoleaf 4D Screen Mirroring settings that the built-in integration doesn't offer yet.
 
-The code is the built-in integration from Home Assistant `dev` (October 2026), adapted to run on Home Assistant **2026.10 and later**. It uses the same domain (`nanoleaf`), so it replaces the built-in integration while installed and keeps your existing config entries and entities.
+The code is the built-in integration from Home Assistant `2026.11.0`, adapted to run on Home Assistant **2026.11 and later**. It uses the same domain (`nanoleaf`), so it replaces the built-in integration while installed and keeps your existing config entries and entities.
 
 ## What it adds
 
@@ -49,7 +49,7 @@ Remove `custom_components/nanoleaf` (in HACS, or by deleting the folder) and res
 
 ## Development
 
-- `pytest` runs Home Assistant core's Nanoleaf tests, adapted to the custom component, plus tests for this fork's additions (`tests/test_screen_mirror.py`, `tests/test_light_state.py`). It needs `pytest-homeassistant-custom-component` for the Home Assistant version you target.
+- `pytest` runs Home Assistant core's Nanoleaf tests, adapted to the custom component, plus tests for this fork's additions (`tests/test_screen_mirror.py`, `tests/test_light_state.py`). It needs core's `pytest-homeassistant` for the Home Assistant version you target (see CLAUDE.md, "Running the tests").
 - `translations/en.json` is generated: edit `strings.json`, then run `python scripts/build_translations.py`.
 
 ## License

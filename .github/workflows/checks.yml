@@ -16,10 +16,6 @@ concurrency:
   group: checks-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  # 0.13.373 = Home Assistant 2026.10.2.
-  HARNESS: pytest-homeassistant-custom-component==0.13.373
-
 jobs:
   pytest:
     runs-on: ubuntu-latest
@@ -28,12 +24,19 @@ jobs:
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
       - name: Install the test harness
-        # The integration's own requirements come from manifest.json.
+        # Tests run on the minimum Home Assistant from hacs.json, with core's own test
+        # harness (pytest-homeassistant) of the same version.
+        # pytest-homeassistant-custom-component stops at 2026.10 and must not be installed
+        # alongside it. The integration's own requirements come from manifest.json.
         run: |
+          ha=$(jq -er .homeassistant hacs.json)
           uv venv -p 3.14 "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
-          mapfile -t reqs < <(jq -r '.requirements[]' custom_components/nanoleaf/manifest.json)
-          VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install "$HARNESS" "${reqs[@]}"
+          # Read into a variable first: a failure inside <(...) would go unnoticed.
+          req_list=$(jq -er '.requirements[]' custom_components/nanoleaf/manifest.json)
+          mapfile -t reqs <<< "$req_list"
+          VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install \
+            "homeassistant==$ha" "pytest-homeassistant==$ha" "${reqs[@]}"
 
       - name: pytest
         run: python -m pytest

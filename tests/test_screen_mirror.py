@@ -6,10 +6,7 @@ from unittest.mock import AsyncMock, call
 from aionanoleaf2 import EndpointNotFoundError, NanoleafConnectionError, Unavailable
 from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from homeassistant.components.select import (
     ATTR_OPTION,
