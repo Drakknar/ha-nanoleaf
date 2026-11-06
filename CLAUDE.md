@@ -33,12 +33,17 @@ Keep each of these when porting core changes.
 ## Running the tests
 
 ```bash
-uv venv -p 3.14 .venv   # the Python version the Home Assistant release requires
-uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2>=1.2.1"
+uv venv -p '>=3.14.2,<3.15' .venv   # Home Assistant 2026.11's requires-python is >=3.14.2
+uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>"
+# then the integration's requirements, within that release's own pins:
+uv pip install -p .venv -c "$(.venv/bin/python -c 'import importlib.util, pathlib; print(pathlib.Path(importlib.util.find_spec("homeassistant").origin).parent / "package_constraints.txt")')" "aionanoleaf2==1.2.1"
 .venv/bin/pytest        # from the repository root
 ```
+On Windows the venv's programs are in `.venv\Scripts\` (`python.exe`, `pytest.exe`) instead of `.venv/bin/`.
 
-The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
+Home Assistant's `package_constraints.txt` doesn't list aionanoleaf2, so the constraints only keep its dependencies from moving Home Assistant's own pins.
+
+The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`) with the minimum aionanoleaf2, read from the manifest's `aionanoleaf2>=` requirement (the step fails if it can't be read). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
 
 - The harness enables custom integrations by default and uses Home Assistant's snapshot serializer; its bundled test components live inside `pytest_homeassistant`, so nothing shadows this repository's `custom_components`.
 - On Windows the root `conftest.py` disables `pytest_socket`, and the venv needs stub `fcntl.py`/`resource.py` modules in site-packages.

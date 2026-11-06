@@ -27,16 +27,29 @@ jobs:
         # Tests run on the minimum Home Assistant from hacs.json, with core's own test
         # harness (pytest-homeassistant) of the same version.
         # pytest-homeassistant-custom-component stops at 2026.10 and must not be installed
-        # alongside it. The integration's own requirements come from manifest.json.
+        # alongside it. The integration's own requirements come from manifest.json, with
+        # aionanoleaf2 at the minimum the manifest allows (aionanoleaf2>=X).
+        # Python: Home Assistant's requires-python floor (>=3.14.2), within 3.14.
         run: |
+          manifest=custom_components/nanoleaf/manifest.json
           ha=$(jq -er .homeassistant hacs.json)
-          uv venv -p 3.14 "$RUNNER_TEMP/venv"
-          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          lib_min=$(jq -er '.requirements[] | select(startswith("aionanoleaf2>=")) | ltrimstr("aionanoleaf2>=")' "$manifest")
+          if ! [[ $lib_min =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error::Can't derive the minimum aionanoleaf2 from $manifest"
+            exit 1
+          fi
           # Read into a variable first: a failure inside <(...) would go unnoticed.
-          req_list=$(jq -er '.requirements[]' custom_components/nanoleaf/manifest.json)
-          mapfile -t reqs <<< "$req_list"
-          VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install \
-            "homeassistant==$ha" "pytest-homeassistant==$ha" "${reqs[@]}"
+          other_list=$(jq -er '[.requirements[] | select(startswith("aionanoleaf2") | not)] | join("\n")' "$manifest")
+          mapfile -t reqs < <(printf '%s' "$other_list")
+          uv venv -p '>=3.14.2,<3.15' "$RUNNER_TEMP/venv"
+          echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
+          export VIRTUAL_ENV=$RUNNER_TEMP/venv
+          uv pip install "homeassistant==$ha" "pytest-homeassistant==$ha"
+          # Everything else within this Home Assistant's own pins; a package it doesn't
+          # list there (aionanoleaf2 included) stays as requested.
+          constraints=$("$VIRTUAL_ENV/bin/python" -c 'import importlib.util, pathlib; print(pathlib.Path(importlib.util.find_spec("homeassistant").origin).parent / "package_constraints.txt")')
+          test -f "$constraints"
+          uv pip install -c "$constraints" "aionanoleaf2==$lib_min" "${reqs[@]}"
 
       - name: pytest
         run: python -m pytest
@@ -70,4 +83,4 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: actionlint
-        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7 -color
+        run: docker run --rm -v "$PWD:/repo" -w /repo rhysd/actionlint:1.7.7@sha256:887a259a5a534f3c4f36cb02dca341673c6089431057242cdc931e9f133147e9 -color
