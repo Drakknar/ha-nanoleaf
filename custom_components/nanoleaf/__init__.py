@@ -42,7 +42,7 @@ PLATFORMS = [
 SCREEN_MIRROR_INTERVAL = timedelta(seconds=15)
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> None:
     """Set up Nanoleaf from a config entry."""
     nanoleaf = Nanoleaf(
         async_get_clientsession(hass), entry.data[CONF_HOST], entry.data[CONF_TOKEN]
@@ -127,9 +127,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> 
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
-    return True
 
-
-async def async_unload_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: NanoleafConfigEntry) -> None:
     """Unload a config entry."""
-    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    await hass.config_entries.async_unload_platforms_or_raise(entry, PLATFORMS)

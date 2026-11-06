@@ -14,7 +14,7 @@ from aionanoleaf2 import (
     Unavailable,
 )
 import pytest
-from pytest_homeassistant_custom_component.common import MockConfigEntry
+from pytest_homeassistant.common import MockConfigEntry
 
 from custom_components.nanoleaf.const import DOMAIN
 from homeassistant.components.button import DOMAIN as BUTTON_DOMAIN, SERVICE_PRESS

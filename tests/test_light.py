@@ -16,7 +16,7 @@ from aionanoleaf2 import (
     Unavailable,
 )
 import pytest
-from pytest_homeassistant_custom_component.common import (
+from pytest_homeassistant.common import (
     MockConfigEntry,
     snapshot_platform,
 )

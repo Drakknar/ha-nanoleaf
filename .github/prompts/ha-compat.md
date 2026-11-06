@@ -47,17 +47,16 @@ Status:
 
 - **Keeping up with core's Nanoleaf files (the main task for every Home Assistant version):**
   - Diff `homeassistant/components/nanoleaf/` and `tests/components/nanoleaf/` in core between the commit CLAUDE.md names as the base and the new tag. The copy was taken from `dev`, so a release can contain changes the copy already has: compare file contents, not commit lists.
-  - Port every change into `custom_components/nanoleaf/` and `tests/`. Keep the differences CLAUDE.md lists: the compatibility shims (as long as `hacs.json` allows Home Assistant versions without the newer API), the 4D entities, the light fixes, `manifest.json` (`version`, `documentation`, `issue_tracker`, `codeowners`, no `categories`) and the test imports (`custom_components.nanoleaf`, `pytest_homeassistant_custom_component`).
+  - Port every change into `custom_components/nanoleaf/` and `tests/`. Keep the differences CLAUDE.md lists: the 4D entities, the light fixes, `manifest.json` (`version`, `documentation`, `issue_tracker`, `codeowners`, no `categories`) and the test imports (`custom_components.nanoleaf`, `pytest_homeassistant`).
   - If core now does something this fork adds (Screen Mirroring mode as its own entity, Music Sync, the brightness or transition fixes), return `needs_attention`. Describe the overlap and the options (drop ours, keep ours) and let the owner decide.
   - After changing `strings.json`, regenerate `translations/en.json` with `python scripts/build_translations.py <new tag>`.
   - Raise the version in `manifest.json` (patch for ported fixes, minor for new behaviour) whenever you change files under `custom_components/`.
   - Update the base commit in CLAUDE.md to the tag you compared with.
 - **Tests:** follow "Running the tests" in CLAUDE.md, with the new Home Assistant version.
   - Make a venv with the Python version that Home Assistant release requires: `uv venv -p 3.x "$RUNNER_TEMP/venv"`.
-  - Install `homeassistant==<new>`, the `pytest-homeassistant-custom-component` release pinned to that version, and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`.
+  - Install `homeassistant==<new>`, core's `pytest-homeassistant` of the same version (from PyPI once published, otherwise `pytest-homeassistant@git+https://github.com/home-assistant/core@<new>#subdirectory=packages/pytest-homeassistant`), and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`. Never install `pytest-homeassistant-custom-component` alongside it.
   - Run `pytest` in the repository root.
-  - If no harness release matches that version yet, use the newest one and say so in the report.
-  - Also run the tests with the oldest version in `hacs.json` when you change anything the shims cover.
+  - Also run the tests with the oldest version in `hacs.json` (`.github/workflows/checks.yml` tests that one).
 - **Home Assistant areas to check:**
   - `DataUpdateCoordinator` and `CoordinatorEntity`;
   - the light, select, switch, button and event entity APIs, and `ColorMode`;

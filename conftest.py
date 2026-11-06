@@ -26,7 +26,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 @pytest.fixture
 def snapshot(snapshot):
     """Serialize Home Assistant objects as core's tests do."""
-    from pytest_homeassistant_custom_component.syrupy import (  # noqa: PLC0415
+    from pytest_homeassistant.syrupy import (  # noqa: PLC0415
         HomeAssistantSnapshotExtension,
     )
 

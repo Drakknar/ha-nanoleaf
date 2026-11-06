@@ -17,8 +17,12 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  # 0.13.373 = Home Assistant 2026.10.2.
-  HARNESS: pytest-homeassistant-custom-component==0.13.373
+  # Minimum Home Assistant (hacs.json) and core's own test harness of the same version.
+  # The harness comes from the core tag until PyPI has pytest-homeassistant 2026.11.0
+  # (the PyPI 0.1.x is an unrelated project); pytest-homeassistant-custom-component
+  # stops at 2026.10 and must not be installed alongside it.
+  HA: homeassistant==2026.11.0
+  HARNESS: pytest-homeassistant@git+https://github.com/home-assistant/core@2026.11.0#subdirectory=packages/pytest-homeassistant
 
 jobs:
   pytest:
@@ -33,7 +37,7 @@ jobs:
           uv venv -p 3.14 "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           mapfile -t reqs < <(jq -r '.requirements[]' custom_components/nanoleaf/manifest.json)
-          VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install "$HARNESS" "${reqs[@]}"
+          VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install "$HA" "$HARNESS" "${reqs[@]}"
 
       - name: pytest
         run: python -m pytest

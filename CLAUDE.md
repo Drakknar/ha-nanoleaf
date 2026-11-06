@@ -13,10 +13,6 @@ To compare with a newer core: `git diff <base> <tag> -- homeassistant/components
 
 Keep each of these when porting core changes.
 
-- **2026.10 compatibility shims** (`hacs.json` allows `2026.10.0`). Core `dev` uses APIs that 2026.10 lacks:
-  - `async_setup_entry` and `async_unload_entry` return `bool`; unloading uses `async_unload_platforms`, not `async_unload_platforms_or_raise`.
-  - 2026.11 still accepts a `bool` from custom integrations (`custom_integration_behavior=IGNORE`); only core integrations get an error.
-  - These can go once `hacs.json` requires a version that has the newer APIs (2026.11).
 - **`manifest.json`:** `version`, `documentation` and `issue_tracker` point to this fork, `@Drakknar` is in `codeowners`, and there is no `categories` (core only).
 - **`translations/en.json`** is generated from `strings.json` by `scripts/build_translations.py`: custom integrations get no `[%key:...%]` resolution. `strings.json` also has `reauth_successful` and `reconfigure_successful`, which core gets from its common strings.
 - **4D (NL69) entities:**
@@ -30,24 +26,25 @@ Keep each of these when porting core changes.
   - brightness is rounded both ways (`_to_device_brightness`, minimum 1);
   - `*ExtControl*` is in `RESERVED_EFFECTS`.
 - **Tests:**
-  - Core's tests import `custom_components.nanoleaf` and `pytest_homeassistant_custom_component.common`.
+  - Core's tests import `custom_components.nanoleaf` and `pytest_homeassistant.common` (core's own harness package, not `pytest-homeassistant-custom-component`, which stops at 2026.10).
   - `tests/test_light.py` expects `set_state` instead of `turn_on` in the error tests.
-  - The snapshot is in the 2026.10 serializer format.
   - Fork-only tests: `tests/test_screen_mirror.py`, `tests/test_light_state.py`.
 
 ## Running the tests
 
 ```bash
 uv venv -p 3.14 .venv   # the Python version the Home Assistant release requires
-uv pip install -p .venv "pytest-homeassistant-custom-component==<release for that HA version>" "aionanoleaf2==1.2.1"
+# Core's own harness, from the core tag until PyPI has pytest-homeassistant==<version>.
+uv pip install -p .venv "homeassistant==<version>" "aionanoleaf2>=1.2.1" \
+  "pytest-homeassistant@git+https://github.com/home-assistant/core@<version>#subdirectory=packages/pytest-homeassistant"
 .venv/bin/pytest        # from the repository root
 ```
 
+The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
+
 - The root `conftest.py` enables custom integrations, puts this repository's `custom_components` first, and uses Home Assistant's snapshot serializer.
 - On Windows it also disables `pytest_socket`, and needs stub `fcntl.py`/`resource.py` modules in site-packages.
-- Verified 2026-10-24: 166 passed with harness 0.13.373 (HA 2026.10.2), Python 3.14, Windows.
-- Verified 2026-10-29: 170 passed with harness 0.13.371 (HA 2026.10.0) and 0.13.375 (HA 2026.10.4), Python 3.14, Linux.
-- HA 2026.11.0b1 had no harness yet (0.13.375 can't import it). The code and tests were run inside a core 2026.11.0b1 checkout instead, with `custom_components.nanoleaf` replaced by `homeassistant.components.nanoleaf`, the shims reverted, the two common abort strings removed and core's snapshot used, because core's checks are stricter for core integrations. Result: 170 passed, and nothing was reported as deprecated.
+- History: up to 2.2.0 the fork kept shims for 2026.10 and ran on `pytest-homeassistant-custom-component` (170 passed on 0.13.371/0.13.375, Linux).
 
 ## Device facts
 
