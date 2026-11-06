@@ -22,4 +22,3 @@ def use_repo_custom_components():
     ours = str(Path(__file__).parent / "custom_components")
     if ours not in custom_components.__path__:
         custom_components.__path__.insert(0, ours)
-
