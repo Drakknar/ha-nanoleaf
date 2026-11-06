@@ -53,8 +53,8 @@ Status:
   - Raise the version in `manifest.json` (patch for ported fixes, minor for new behaviour) whenever you change files under `custom_components/`.
   - Update the base commit in CLAUDE.md to the tag you compared with.
 - **Tests:** follow "Running the tests" in CLAUDE.md, with the new Home Assistant version.
-  - Make a venv with the Python version that Home Assistant release requires: `uv venv -p 3.x "$RUNNER_TEMP/venv"`.
-  - Install `homeassistant==<new>`, `pytest-homeassistant==<new>` (core's own harness, from PyPI; PyPI can lag the core release by a day, so if that version isn't published yet use `pytest-homeassistant@git+https://github.com/home-assistant/core@<new>#subdirectory=packages/pytest-homeassistant`), and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`. Never install `pytest-homeassistant-custom-component` alongside it.
+  - Make a venv with the Python version that Home Assistant release requires (its `requires-python`, e.g. `uv venv -p '>=3.14.2,<3.15' "$RUNNER_TEMP/venv"` for 2026.11).
+  - Install `homeassistant==<new>`, `pytest-homeassistant==<new>` (core's own harness, from PyPI; PyPI can lag the core release by a day, so if that version isn't published yet use `pytest-homeassistant@git+https://github.com/home-assistant/core@<new>#subdirectory=packages/pytest-homeassistant`), and then, in a second `uv pip install` with `-c <site-packages>/homeassistant/package_constraints.txt` (the new release's own pins), `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`. Never install `pytest-homeassistant-custom-component` alongside it.
   - Run `pytest` in the repository root.
   - Also run the tests with the oldest version in `hacs.json` (`.github/workflows/checks.yml` tests that one).
 - **Home Assistant areas to check:**

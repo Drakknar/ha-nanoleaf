@@ -34,9 +34,13 @@ Keep each of these when porting core changes.
 
 ```bash
 uv venv -p '>=3.14.2,<3.15' .venv   # Home Assistant 2026.11's requires-python is >=3.14.2
-uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2==1.2.1"
+uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>"
+# then the integration's requirements, within that release's own pins:
+uv pip install -p .venv -c "$(.venv/bin/python -c 'import homeassistant, pathlib; print(pathlib.Path(homeassistant.__file__).parent / "package_constraints.txt")')" "aionanoleaf2==1.2.1"
 .venv/bin/pytest        # from the repository root
 ```
+
+Home Assistant's `package_constraints.txt` doesn't list aionanoleaf2, so the constraints only keep its dependencies from moving Home Assistant's own pins.
 
 The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`) with the minimum aionanoleaf2, read from the manifest's `aionanoleaf2>=` requirement (the step fails if it can't be read). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
 
