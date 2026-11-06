@@ -26,7 +26,7 @@ Keep each of these when porting core changes.
   - brightness is rounded both ways (`_to_device_brightness`, minimum 1);
   - `*ExtControl*` is in `RESERVED_EFFECTS`.
 - **Tests:**
-  - Core's tests import `custom_components.nanoleaf` and `pytest_homeassistant.common` (core's own harness package, not `pytest-homeassistant-custom-component`, which stops at 2026.10).
+  - Core's tests import `custom_components.nanoleaf` instead of `homeassistant.components.nanoleaf`. Their `pytest_homeassistant.common` imports are unchanged: core 2026.11.0's tests use the same module (core's harness package, not `pytest-homeassistant-custom-component`, which stops at 2026.10).
   - `tests/test_light.py` expects `set_state` instead of `turn_on` in the error tests.
   - Fork-only tests: `tests/test_screen_mirror.py`, `tests/test_light_state.py`.
 

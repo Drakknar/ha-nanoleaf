@@ -47,7 +47,7 @@ Status:
 
 - **Keeping up with core's Nanoleaf files (the main task for every Home Assistant version):**
   - Diff `homeassistant/components/nanoleaf/` and `tests/components/nanoleaf/` in core between the commit CLAUDE.md names as the base and the new tag. The copy matches the core tag CLAUDE.md names, apart from the differences listed there.
-  - Port every change into `custom_components/nanoleaf/` and `tests/`. Keep the differences CLAUDE.md lists: the 4D entities, the light fixes, `manifest.json` (`version`, `documentation`, `issue_tracker`, `codeowners`, no `categories`) and the test imports (`custom_components.nanoleaf`, `pytest_homeassistant`).
+  - Port every change into `custom_components/nanoleaf/` and `tests/`. Keep the differences CLAUDE.md lists: the 4D entities, the light fixes, `manifest.json` (`version`, `documentation`, `issue_tracker`, `codeowners`, no `categories`) and the test imports of `custom_components.nanoleaf` instead of `homeassistant.components.nanoleaf`.
   - If core now does something this fork adds (Screen Mirroring mode as its own entity, Music Sync, the brightness or transition fixes), return `needs_attention`. Describe the overlap and the options (drop ours, keep ours) and let the owner decide.
   - After changing `strings.json`, regenerate `translations/en.json` with `python scripts/build_translations.py <new tag>`.
   - Raise the version in `manifest.json` (patch for ported fixes, minor for new behaviour) whenever you change files under `custom_components/`.
