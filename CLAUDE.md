@@ -34,11 +34,11 @@ Keep each of these when porting core changes.
 
 ```bash
 uv venv -p 3.14 .venv   # the Python version the Home Assistant release requires
-uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2>=1.2.1"
+uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2==1.2.1"
 .venv/bin/pytest        # from the repository root
 ```
 
-The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
+The minimum is the `hacs.json` version (2026.11.0); CI runs it (`.github/workflows/checks.yml`) with the minimum aionanoleaf2, read from the manifest's `aionanoleaf2>=` requirement (the step fails if it can't be read). Since 2.3.0 there are no compatibility shims: the code matches core's API for that release.
 
 - The harness enables custom integrations by default and uses Home Assistant's snapshot serializer; its bundled test components live inside `pytest_homeassistant`, so nothing shadows this repository's `custom_components`.
 - On Windows the root `conftest.py` disables `pytest_socket`, and the venv needs stub `fcntl.py`/`resource.py` modules in site-packages.

@@ -27,16 +27,23 @@ jobs:
         # Tests run on the minimum Home Assistant from hacs.json, with core's own test
         # harness (pytest-homeassistant) of the same version.
         # pytest-homeassistant-custom-component stops at 2026.10 and must not be installed
-        # alongside it. The integration's own requirements come from manifest.json.
+        # alongside it. The integration's own requirements come from manifest.json, with
+        # aionanoleaf2 at the minimum the manifest allows (aionanoleaf2>=X).
         run: |
+          manifest=custom_components/nanoleaf/manifest.json
           ha=$(jq -er .homeassistant hacs.json)
+          lib_min=$(jq -er '.requirements[] | select(startswith("aionanoleaf2>=")) | ltrimstr("aionanoleaf2>=")' "$manifest")
+          if ! [[ $lib_min =~ ^[0-9]+(\.[0-9]+)*$ ]]; then
+            echo "::error::Can't derive the minimum aionanoleaf2 from $manifest"
+            exit 1
+          fi
+          # Read into a variable first: a failure inside <(...) would go unnoticed.
+          other_list=$(jq -er '[.requirements[] | select(startswith("aionanoleaf2") | not)] | join("\n")' "$manifest")
+          mapfile -t reqs < <(printf '%s' "$other_list")
           uv venv -p 3.14 "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
-          # Read into a variable first: a failure inside <(...) would go unnoticed.
-          req_list=$(jq -er '.requirements[]' custom_components/nanoleaf/manifest.json)
-          mapfile -t reqs <<< "$req_list"
           VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install \
-            "homeassistant==$ha" "pytest-homeassistant==$ha" "${reqs[@]}"
+            "homeassistant==$ha" "pytest-homeassistant==$ha" "aionanoleaf2==$lib_min" "${reqs[@]}"
 
       - name: pytest
         run: python -m pytest
