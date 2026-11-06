@@ -18,10 +18,7 @@ from aionanoleaf2 import (
 )
 from freezegun.api import FrozenDateTimeFactory
 import pytest
-from pytest_homeassistant.common import (
-    MockConfigEntry,
-    async_fire_time_changed,
-)
+from pytest_homeassistant.common import MockConfigEntry, async_fire_time_changed
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_OFF, STATE_ON, STATE_UNAVAILABLE

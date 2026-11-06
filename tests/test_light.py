@@ -16,10 +16,7 @@ from aionanoleaf2 import (
     Unavailable,
 )
 import pytest
-from pytest_homeassistant.common import (
-    MockConfigEntry,
-    snapshot_platform,
-)
+from pytest_homeassistant.common import MockConfigEntry, snapshot_platform
 from syrupy.assertion import SnapshotAssertion
 
 from custom_components.nanoleaf.const import DOMAIN
