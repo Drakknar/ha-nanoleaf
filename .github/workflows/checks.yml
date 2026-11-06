@@ -29,6 +29,7 @@ jobs:
         # pytest-homeassistant-custom-component stops at 2026.10 and must not be installed
         # alongside it. The integration's own requirements come from manifest.json, with
         # aionanoleaf2 at the minimum the manifest allows (aionanoleaf2>=X).
+        # Python: Home Assistant's requires-python floor (>=3.14.2), within 3.14.
         run: |
           manifest=custom_components/nanoleaf/manifest.json
           ha=$(jq -er .homeassistant hacs.json)
@@ -40,7 +41,7 @@ jobs:
           # Read into a variable first: a failure inside <(...) would go unnoticed.
           other_list=$(jq -er '[.requirements[] | select(startswith("aionanoleaf2") | not)] | join("\n")' "$manifest")
           mapfile -t reqs < <(printf '%s' "$other_list")
-          uv venv -p 3.14 "$RUNNER_TEMP/venv"
+          uv venv -p '>=3.14.2,<3.15' "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           VIRTUAL_ENV=$RUNNER_TEMP/venv uv pip install \
             "homeassistant==$ha" "pytest-homeassistant==$ha" "aionanoleaf2==$lib_min" "${reqs[@]}"

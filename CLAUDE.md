@@ -33,7 +33,7 @@ Keep each of these when porting core changes.
 ## Running the tests
 
 ```bash
-uv venv -p 3.14 .venv   # the Python version the Home Assistant release requires
+uv venv -p '>=3.14.2,<3.15' .venv   # Home Assistant 2026.11's requires-python is >=3.14.2
 uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2==1.2.1"
 .venv/bin/pytest        # from the repository root
 ```
