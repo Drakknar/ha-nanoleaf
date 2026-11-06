@@ -54,7 +54,7 @@ Status:
   - Update the base commit in CLAUDE.md to the tag you compared with.
 - **Tests:** follow "Running the tests" in CLAUDE.md, with the new Home Assistant version.
   - Make a venv with the Python version that Home Assistant release requires: `uv venv -p 3.x "$RUNNER_TEMP/venv"`.
-  - Install `homeassistant==<new>`, core's `pytest-homeassistant` of the same version (from PyPI once published, otherwise `pytest-homeassistant@git+https://github.com/home-assistant/core@<new>#subdirectory=packages/pytest-homeassistant`), and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`. Never install `pytest-homeassistant-custom-component` alongside it.
+  - Install `homeassistant==<new>`, `pytest-homeassistant==<new>` (core's own harness, on PyPI), and `aionanoleaf2`: the new release when reviewing one, otherwise the minimum version in `manifest.json`. Never install `pytest-homeassistant-custom-component` alongside it.
   - Run `pytest` in the repository root.
   - Also run the tests with the oldest version in `hacs.json` (`.github/workflows/checks.yml` tests that one).
 - **Home Assistant areas to check:**

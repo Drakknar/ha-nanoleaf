@@ -34,9 +34,7 @@ Keep each of these when porting core changes.
 
 ```bash
 uv venv -p 3.14 .venv   # the Python version the Home Assistant release requires
-# Core's own harness, from the core tag until PyPI has pytest-homeassistant==<version>.
-uv pip install -p .venv "homeassistant==<version>" "aionanoleaf2>=1.2.1" \
-  "pytest-homeassistant@git+https://github.com/home-assistant/core@<version>#subdirectory=packages/pytest-homeassistant"
+uv pip install -p .venv "homeassistant==<version>" "pytest-homeassistant==<version>" "aionanoleaf2>=1.2.1"
 .venv/bin/pytest        # from the repository root
 ```
 
