@@ -13,19 +13,13 @@ if sys.platform == "win32":
 
 
 @pytest.fixture(autouse=True)
-def auto_enable_custom_integrations(enable_custom_integrations):
-    """Load the integration from custom_components."""
-    # The harness's own testing_config/custom_components shadows ours.
+def use_repo_custom_components():
+    """Load the integration from this repository's custom_components."""
+    # The harness enables custom integrations, but its own
+    # testing_config/custom_components package shadows ours.
     import custom_components  # noqa: PLC0415
 
     ours = str(Path(__file__).parent / "custom_components")
     if ours not in custom_components.__path__:
         custom_components.__path__.insert(0, ours)
 
-
-@pytest.fixture
-def snapshot(snapshot):
-    """Serialize Home Assistant objects as core's tests do."""
-    from pytest_homeassistant.syrupy import HomeAssistantSnapshotExtension  # noqa: PLC0415
-
-    return snapshot.use_extension(HomeAssistantSnapshotExtension)
