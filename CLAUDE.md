@@ -4,7 +4,7 @@ Home Assistant core's `nanoleaf` integration, run as a custom integration with t
 
 ## Base
 
-- `custom_components/nanoleaf/` and `tests/`: home-assistant/core `2026.11.0` (74cf5a49c63ed8d4d87717844bf14f79c28c9cea, 2026-11-04; Nanoleaf code unchanged since `2026.11.0b1`). The last Nanoleaf change in it is "Remove deprecated device trigger from nanoleaf" (#188656).
+- `custom_components/nanoleaf/` and `tests/`: home-assistant/core `2026.11.0` (74cf5a49c63ed8d4d87717844bf14f79c28c9cea, 2026-11-04). The last Nanoleaf change in it is the connectivity metadata in `manifest.json` (#189910, 2026-11-02, after `2026.11.0b1`), which the fork has; the one before is "Remove deprecated device trigger from nanoleaf" (#188656).
 - `aionanoleaf2>=1.2.1`: at least the version core pins (hassfest rejects an exact pin of a package core depends on).
 
 To compare with a newer core: `git diff <base> <tag> -- homeassistant/components/nanoleaf tests/components/nanoleaf` in a core clone, then port it here.
