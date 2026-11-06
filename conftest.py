@@ -1,4 +1,4 @@
-"""Test setup for running the integration as a custom component."""
+"""Windows-only pytest_socket patch for the test harness."""
 
 import sys
 

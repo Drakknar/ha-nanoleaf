@@ -29,7 +29,7 @@ jobs:
         # pytest-homeassistant-custom-component stops at 2026.10 and must not be installed
         # alongside it. The integration's own requirements come from manifest.json.
         run: |
-          ha=$(jq -r .homeassistant hacs.json)
+          ha=$(jq -er .homeassistant hacs.json)
           uv venv -p 3.14 "$RUNNER_TEMP/venv"
           echo "$RUNNER_TEMP/venv/bin" >> "$GITHUB_PATH"
           mapfile -t reqs < <(jq -r '.requirements[]' custom_components/nanoleaf/manifest.json)
